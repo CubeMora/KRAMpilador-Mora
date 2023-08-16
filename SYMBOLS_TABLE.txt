@@ -1,0 +1,5 @@
+TIPO_DATO: cadena, IDENTIFICADOR: $variable, VALOR: ''Holas''
+TIPO_DATO: entero, IDENTIFICADOR: $variable2, VALOR: 2
+TIPO_DATO: flotante, IDENTIFICADOR: $asd, VALOR: 1.332
+TIPO_DATO: entero, IDENTIFICADOR: $variable3, VALOR: 1
+TIPO_DATO: entero, IDENTIFICADOR: $suma, VALOR: 2

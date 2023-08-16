@@ -79,54 +79,6 @@ menos { return token (yytext(), "RESTAR", yyline, yycolumn); }
 
 
 
-
-/* Movimiento */
-adelante |
-atrás |
-izquierda |
-derecha |
-norte |
-sur |
-este |
-oeste { return token(yytext(), "MOVIMIENTO", yyline, yycolumn); }
-
-/* Pintar */
-pintar { return token(yytext(), "PINTAR", yyline, yycolumn); }
-
-/* Detener pintar */
-detenerPintar { return token(yytext(), "DETENER_PINTAR", yyline, yycolumn); }
-
-/* Tomar */
-tomar |
-poner { return token(yytext(), "TOMAR", yyline, yycolumn); }
-
-/* Lanzar Moneda */
-lanzarMoneda { return token(yytext(), "LANZAR_MONEDA", yyline, yycolumn); }
-
-/* Ver */
-izquierdaEsObstáculo |
-izquierdaEsClaro |
-izquierdaEsBaliza |
-izquierdaEsBlanco |
-izquierdaEsNegro |
-frenteEsObstáculo |
-frenteEsClaro |
-frenteEsBaliza |
-frenteEsBlanco |
-frenteEsNegro |
-derechaEsObstáculo |
-derechaEsClaro |
-derechaEsBaliza |
-derechaEsBlanco |
-derechaEsNegro { return token(yytext(), "VER", yyline, yycolumn); }
-
-/* Repetir */
-repetir |
-repetirMientras { return token(yytext(), "REPETIR", yyline, yycolumn); }
-
-/* Detener repetir */
-interrumpir { return token(yytext(), "DETENER_REPETIR", yyline, yycolumn); }
-
 /* Estructura si */
 si |
 sino { return token(yytext(), "ESTRUCTURA_SI", yyline, yycolumn); }

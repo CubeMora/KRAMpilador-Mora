@@ -1,6 +1,10 @@
 cadena $variable = ''Holas'';
 entero $variable2 = 2;
 flotante $asd = 1.332;
+entero $variable3 = 1;
+entero $suma = 2 mas 1;
+
+
 
 //entero $entero = 1;
 
