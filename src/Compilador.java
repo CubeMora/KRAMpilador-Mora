@@ -41,6 +41,8 @@ public class Compilador extends javax.swing.JFrame {
     private ArrayList<Production> identProd;
     private HashMap<String, String> identificadores;
     private boolean codeHasBeenCompiled = false;
+    private HashMap<String, String> runtimeVariables;
+
 
     /**
      * Creates new form Compilador
@@ -76,6 +78,8 @@ public class Compilador extends javax.swing.JFrame {
         textsColor = new ArrayList<>();
         identProd = new ArrayList<>();
         identificadores = new HashMap<>();
+        runtimeVariables = new HashMap<>();
+
         Functions.setAutocompleterJTextComponent(new String[]{"número", "color", "adelante", "atrás",
             "izquierda", "derecha", "norte", "sur", "este", "oeste", "pintar", "detenerPintar",
             "tomar", "poner", "lanzarMoneda", "entero", "cadena"}, jtpCode, () -> {
@@ -316,53 +320,34 @@ public class Compilador extends javax.swing.JFrame {
     }//GEN-LAST:event_btnEjecutarActionPerformed
 
     private void executeCode(ArrayList<String> blocksOfCode, int repeats) {
-        for (int j = 1; j <= repeats; j++) {
-            int repeatCode = -1;
-            for (int i = 0; i < blocksOfCode.size(); i++) {
-                String blockOfCode = blocksOfCode.get(i);
-                if (repeatCode != -1) {
-                    int[] posicionMarcador = CodeBlock.getPositionOfBothMarkers(blocksOfCode, blockOfCode);
-                    executeCode(new ArrayList<>(blocksOfCode.subList(posicionMarcador[0], posicionMarcador[1])), repeatCode);
-                    repeatCode = -1;
-                    i = posicionMarcador[1];
-                } else {
-                    String[] sentences = blockOfCode.split(";");
-                    for (String sentence : sentences) {
-                        sentence = sentence.trim();
-                        // Llamar código de ejecución (arduino, gráfico, etc)
-                        if (sentence.startsWith("pintar")) {
-                            String parametro;
-                            if (sentence.contains("$")) {
-                                parametro = identificadores.get(sentence.substring(9, sentence.length() - 2));
-                            } else {
-                                parametro = sentence.substring(9, sentence.length() - 2);
-                            }
-                            System.out.println("Pintando de color " + parametro + "...");
-                        } else if (sentence.startsWith("izquierda")) {
-                            System.out.println("Moviéndose a la izquierda...");
-                        } else if (sentence.startsWith("derecha")) {
-                            System.out.println("Moviéndose a la derecha...");
-                        } else if (sentence.startsWith("adelante")) {
-                            System.out.println("Moviéndose hacia adelante");
-                        } else if (sentence.contains("=")) {
-                            String[] identComp = sentence.split(" ");
-                            System.out.println("Declarando identificador " + identComp[1] + " igual a " + identComp[3]);
-                        } else if (sentence.startsWith("atrás")) {
-                            System.out.println("Moviéndose hacia atrás");
-                        } else if (sentence.startsWith("repetir")) {
-                            String parametro;
-                            if (sentence.contains("$")) {
-                                parametro = identificadores.get(sentence.substring(10, sentence.length() - 2));
-                            } else {
-                                parametro = sentence.substring(10, sentence.length() - 2);
-                            }
-                            repeatCode = Integer.parseInt(parametro);
-                        }
+    for (int j = 1; j <= repeats; j++) {
+        int repeatCode = -1;
+        for (int i = 0; i < blocksOfCode.size(); i++) {
+            String blockOfCode = blocksOfCode.get(i);
+            if (repeatCode != -1) {
+                int[] posicionMarcador = CodeBlock.getPositionOfBothMarkers(blocksOfCode, blockOfCode);
+                executeCode(new ArrayList<>(blocksOfCode.subList(posicionMarcador[0], posicionMarcador[1])), repeatCode);
+                repeatCode = -1;
+                i = posicionMarcador[1];
+            } else {
+                String[] sentences = blockOfCode.split(";");
+                for (String sentence : sentences) {
+                    sentence = sentence.trim();
+                    // Llamar código de ejecución (arduino, gráfico, etc)
+                    if (sentence.contains("=")) {
+                        String[] identComp = sentence.split(" ");
+                        String varName = identComp[1];
+                        String varValue = identComp[3];
+                        runtimeVariables.put(varName, varValue);
+                        System.out.println("Declarando identificaghgfhgfdor " + varName + " igual a " + varValue);
+                    } else if (sentence.startsWith("atrás")) {
+                        System.out.println("Moviéndose hacia atrás");
                     }
                 }
             }
         }
     }
+}
 
     private void compile() {
         clearFields();
@@ -409,12 +394,9 @@ public class Compilador extends javax.swing.JFrame {
         gramatica.delete(new String[]{"ERROR", "ERROR_1", "ERROR_2"}, 14);
 
         /* Agrupación de valores */
-        /* Enteros */
-        gramatica.group("VALOR", "(CADENA | NUMERO)", true);
+        gramatica.group("VALOR", "(CADENA | NUMERO | BOOLEANO | FLOTANTE)", true);
         
-        /* CADENAS */
-        gramatica.group("CADENAS", "CADENA");
-
+    
         /* Declaración de variables */
         gramatica.group("VARIABLE", "TIPO_DATO IDENTIFICADOR OP_ASIG VALOR", true, identProd);
         gramatica.group("VARIABLE", "TIPO_DATO OP_ASIG VALOR", true,
@@ -431,6 +413,7 @@ public class Compilador extends javax.swing.JFrame {
                 3, " × Error sintáctico {}: falta el operador de asignación en la declaración de variable [#, %]", 2);
         gramatica.group("VARIABLE", "IDENTIFICADOR OP_ASIG VALOR", true,
                 4, " × Error sintáctico {}: falta el tipo de dato en la declaración de variable [#, %]");
+        
 
         /* Eliminación de tipos de datos y operadores de asignación */
         gramatica.delete("TIPO_DATO",
@@ -552,16 +535,20 @@ public class Compilador extends javax.swing.JFrame {
     private void semanticAnalysis() {
         HashMap<String, String> identDataType = new HashMap<>();
         identDataType.put("cadena", "CADENA");
-        identDataType.put("entero", "ENTERO");
+        identDataType.put("entero", "NUMERO");
+        identDataType.put("array","ARRAY");
+        identDataType.put("booleano","BOOLEANO");
+        identDataType.put("flotante","FLOTANTE");
         for (Production id : identProd) {
             if (!identDataType.get(id.lexemeRank(0)).equals(id.lexicalCompRank(-1))) {
                 errors.add(new ErrorLSSL(1, " × Error semántico {}: valor no compatible con el tipo de dato [#, %]", id, true));
             }
             if (id.lexicalCompRank(-1).equals("ENTERO") && !id.lexemeRank(-1).matches("#[0-9a-fA-F]+")) {
-                errors.add(new ErrorLSSL(2, " × Error lógico {}: el color no es un número hexadecimal [#, %]", id, false));
+                errors.add(new ErrorLSSL(2, " × Error lógico {}: [#, %]", id, false));
             }
             identificadores.put(id.lexemeRank(1), id.lexemeRank(-1));
         }
+        System.out.println(identProd);
     }
 
     private void colorAnalysis() {

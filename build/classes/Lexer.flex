@@ -39,8 +39,11 @@ Numero = 0 | [1-9][0-9]*
 \${Identificador} { return token(yytext(), "IDENTIFICADOR", yyline, yycolumn); }
 
 /* Tipos de dato */
+cadena |
 entero |
-cadena { return token(yytext(), "TIPO_DATO", yyline, yycolumn); }
+booleano |
+flotante |
+array { return token(yytext(), "TIPO_DATO", yyline, yycolumn); }
 
 /* Número */
 {Numero} { return token(yytext(), "NUMERO", yyline, yycolumn); }
@@ -53,6 +56,13 @@ menos { return token (yytext(), "RESTAR", yyline, yycolumn); }
 
 /* Cadenas */
 \''[{Letra}{Digito}]*''? { return token(yytext(), "CADENA", yyline, yycolumn); }
+
+/* Booleano */
+(verdadero|falso) { return token(yytext(), "BOOLEANO", yyline, yycolumn); }
+
+/* Flotante */
+{Numero}+"."{Numero}+ { return token(yytext(), "FLOTANTE", yyline, yycolumn); }
+
 
 /* Operadores de agrupación */
 "(" { return token(yytext(), "PARENTESIS_A", yyline, yycolumn); }

@@ -1,2 +1,5 @@
 cadena $variable = ''Holas'';
+entero $variable2 = 2;
+flotante $asd = 1.332;
+//entero $entero = 1;
 
