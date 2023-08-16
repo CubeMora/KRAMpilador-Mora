@@ -41,7 +41,7 @@ public class Compilador extends javax.swing.JFrame {
     private ArrayList<Production> identProd;
     private HashMap<String, String> identificadores;
     private boolean codeHasBeenCompiled = false;
-    private HashMap<String, String> runtimeVariables;
+    private HashMap<String, VariableInfo> runtimeVariables;
 
 
     /**
@@ -317,9 +317,34 @@ public class Compilador extends javax.swing.JFrame {
 
             }
         }
+        
     }//GEN-LAST:event_btnEjecutarActionPerformed
+    
+    class VariableInfo {
+    private String name;
+    private String type;
+    private String value;
 
-    private void executeCode(ArrayList<String> blocksOfCode, int repeats) {
+    public VariableInfo(String name, String type, String value) {
+        this.name = name;
+        this.type = type;
+        this.value = value;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getValue() {
+        return value;
+    }
+}
+    
+   private void executeCode(ArrayList<String> blocksOfCode, int repeats) {
     for (int j = 1; j <= repeats; j++) {
         int repeatCode = -1;
         for (int i = 0; i < blocksOfCode.size(); i++) {
@@ -337,9 +362,11 @@ public class Compilador extends javax.swing.JFrame {
                     if (sentence.contains("=")) {
                         String[] identComp = sentence.split(" ");
                         String varName = identComp[1];
+                        String varType = identComp[0];
                         String varValue = identComp[3];
-                        runtimeVariables.put(varName, varValue);
-                        System.out.println("Declarando identificaghgfhgfdor " + varName + " igual a " + varValue);
+                        VariableInfo variableInfo = new VariableInfo(varName, varType, varValue);
+                        runtimeVariables.put(varName, variableInfo);
+                        System.out.println("Declarando identificador " + runtimeVariables.get(varName) + " igual a " + varValue + " con tipo de valor: " + varType);
                     } else if (sentence.startsWith("atrás")) {
                         System.out.println("Moviéndose hacia atrás");
                     }
