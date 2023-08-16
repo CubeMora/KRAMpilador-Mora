@@ -15,14 +15,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
 
@@ -42,7 +45,6 @@ public class Compilador extends javax.swing.JFrame {
     private HashMap<String, String> identificadores;
     private boolean codeHasBeenCompiled = false;
     private HashMap<String, VariableInfo> runtimeVariables;
-
 
     /**
      * Creates new form Compilador
@@ -64,7 +66,7 @@ public class Compilador extends javax.swing.JFrame {
                 System.exit(0);
             }
         });
-        
+
         Functions.setLineNumberOnJTextComponent(jtpCode);
         timerKeyReleased = new Timer((int) (1000 * 0.3), (ActionEvent e) -> {
             timerKeyReleased.stop();
@@ -80,9 +82,7 @@ public class Compilador extends javax.swing.JFrame {
         identificadores = new HashMap<>();
         runtimeVariables = new HashMap<>();
 
-        Functions.setAutocompleterJTextComponent(new String[]{"número", "color", "adelante", "atrás",
-            "izquierda", "derecha", "norte", "sur", "este", "oeste", "pintar", "detenerPintar",
-            "tomar", "poner", "lanzarMoneda", "entero", "cadena"}, jtpCode, () -> {
+        Functions.setAutocompleterJTextComponent(new String[]{"entero", "cadena", "flotante", "booleano"}, jtpCode, () -> {
             timerKeyReleased.restart();
         });
     }
@@ -317,64 +317,134 @@ public class Compilador extends javax.swing.JFrame {
 
             }
         }
-        
+
     }//GEN-LAST:event_btnEjecutarActionPerformed
-    
+
     class VariableInfo {
-    private String name;
-    private String type;
-    private String value;
 
-    public VariableInfo(String name, String type, String value) {
-        this.name = name;
-        this.type = type;
-        this.value = value;
+        private String name;
+        private String type;
+        private String value;
+
+        public VariableInfo(String name, String type, String value) {
+            this.name = name;
+            this.type = type;
+            this.value = value;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 
-    public String getName() {
-        return name;
-    }
+    private void executeCode(ArrayList<String> blocksOfCode, int repeats) {
+        List<String[]> variableMatrix = new ArrayList<>(); // Matriz para almacenar las variables
 
-    public String getType() {
-        return type;
-    }
+        for (int j = 1; j <= repeats; j++) {
+            int repeatCode = -1;
+            for (int i = 0; i < blocksOfCode.size(); i++) {
+                String blockOfCode = blocksOfCode.get(i);
+                // System.out.println("Blocks of code " + blockOfCode);
+                if (repeatCode != -1) {
+                    int[] posicionMarcador = CodeBlock.getPositionOfBothMarkers(blocksOfCode, blockOfCode);
+                    executeCode(new ArrayList<>(blocksOfCode.subList(posicionMarcador[0], posicionMarcador[1])), repeatCode);
+                    repeatCode = -1;
+                    i = posicionMarcador[1];
+                } else {
+                    String[] sentences = blockOfCode.split(";");
+                    for (String sentence : sentences) {
+                        sentence = sentence.trim();
+                        // Llamar código de ejecución (arduino, gráfico, etc)
+                        if (sentence.contains("=")) {
+                            String[] identComp = sentence.split(" ");
+                            String varName = identComp[1];
+                            String varType = identComp[0];
+                            String varValue = identComp[3];
 
-    public String getValue() {
-        return value;
-    }
-}
-    
-   private void executeCode(ArrayList<String> blocksOfCode, int repeats) {
-    for (int j = 1; j <= repeats; j++) {
-        int repeatCode = -1;
-        for (int i = 0; i < blocksOfCode.size(); i++) {
-            String blockOfCode = blocksOfCode.get(i);
-            if (repeatCode != -1) {
-                int[] posicionMarcador = CodeBlock.getPositionOfBothMarkers(blocksOfCode, blockOfCode);
-                executeCode(new ArrayList<>(blocksOfCode.subList(posicionMarcador[0], posicionMarcador[1])), repeatCode);
-                repeatCode = -1;
-                i = posicionMarcador[1];
-            } else {
-                String[] sentences = blockOfCode.split(";");
-                for (String sentence : sentences) {
-                    sentence = sentence.trim();
-                    // Llamar código de ejecución (arduino, gráfico, etc)
-                    if (sentence.contains("=")) {
-                        String[] identComp = sentence.split(" ");
-                        String varName = identComp[1];
-                        String varType = identComp[0];
-                        String varValue = identComp[3];
-                        VariableInfo variableInfo = new VariableInfo(varName, varType, varValue);
-                        runtimeVariables.put(varName, variableInfo);
-                        System.out.println("Declarando identificador " + runtimeVariables.get(varName) + " igual a " + varValue + " con tipo de valor: " + varType);
-                    } else if (sentence.startsWith("atrás")) {
-                        System.out.println("Moviéndose hacia atrás");
+                            if (varValue.contains("mas") || varValue.contains("menos")) {
+                                int operationResult = evaluateExpression(varValue, variableMatrix);
+                                varValue = String.valueOf(operationResult);
+                                System.out.println("EQUISH: " + varValue);
+                            }
+
+                            // Agregar la variable a la matriz
+                            String[] variableInfo = {varType, varName, varValue};
+                            variableMatrix.add(variableInfo);
+
+                            //System.out.println("Declarando identificador " + varName + " igual a " + varValue + " con tipo de valor: " + varType);
+                        } else if (sentence.startsWith("atrás")) {
+                            System.out.println("Moviéndose hacia atrás");
+                        }
                     }
                 }
             }
         }
+
+        // Imprimir la matriz con las variables
+        for (String[] variableInfo : variableMatrix) {
+            System.out.println("TIPO_DATO: " + variableInfo[0] + ", IDENTIFICADOR: " + variableInfo[1] + ", VALOR: " + variableInfo[2]);
+        }
+        try {
+            // Crear un FileWriter para el archivo "SYMBOLS_TABLE.txt"
+            FileWriter fileWriter = new FileWriter("SYMBOLS_TABLE.txt");
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+
+            // Escribir la información de la tabla de variables en el archivo
+            for (String[] variableInfo : variableMatrix) {
+                String line = "TIPO_DATO: " + variableInfo[0] + ", IDENTIFICADOR: " + variableInfo[1] + ", VALOR: " + variableInfo[2];
+                bufferedWriter.write(line);
+                bufferedWriter.newLine();
+            }
+
+            // Cerrar el BufferedWriter
+            bufferedWriter.close();
+
+            System.out.println("Tabla de variables guardada en SYMBOLS_TABLE.txt");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-}
+
+    private int evaluateExpression(String expression, List<String[]> variableMatrix) {
+        int result = 0;
+
+        if (expression.contains("mas")) {
+            String[] sumValues = expression.split("mas");
+            for (String sumValue : sumValues) {
+                result += getValue(sumValue.trim(), variableMatrix);
+            }
+        } else if (expression.contains("menos")) {
+            String[] sumValues = expression.split("menos");
+            result = getValue(sumValues[0].trim(), variableMatrix); // Start with the first value
+            for (int i = 1; i < sumValues.length; i++) {
+                result -= getValue(sumValues[i].trim(), variableMatrix);
+            }
+        }
+
+        return result;
+    }
+
+    private int getValue(String valueString, List<String[]> variableMatrix) {
+        try {
+            return Integer.parseInt(valueString);
+        } catch (NumberFormatException e) {
+            for (String[] variableInfo : variableMatrix) {
+                if (variableInfo[1].equals(valueString)) {
+                    return Integer.parseInt(variableInfo[2]);
+                }
+            }
+        }
+        return 0; // Default value if valueString is neither a number nor a variable name
+    }
 
     private void compile() {
         clearFields();
@@ -421,11 +491,20 @@ public class Compilador extends javax.swing.JFrame {
         gramatica.delete(new String[]{"ERROR", "ERROR_1", "ERROR_2"}, 14);
 
         /* Agrupación de valores */
-        gramatica.group("VALOR", "(CADENA | NUMERO | BOOLEANO | FLOTANTE)", true);
-        
-    
+        gramatica.group("VALOR", "(CADENA | NUMERO | BOOLEANO | FLOTANTE | VARIABLE | SUMATORIA)", true);
+
+        /* Suma */
+        gramatica.group("SUMATORIA", "(VALOR | VARIABLE) SUMAR (VALOR | VARIABLE)");
+
+        //gramatica.group("VALOR", "SUMATORIA");
+        gramatica.group("SUMATORIA", "SUMAR (VALOR | VARIABLE)", true,
+                25, " × Error sintáctico {}: Falta una expresión en la suma [#, %]");
+        gramatica.group("SUMATORIA", "(VALOR | VARIABLE) SUMAR", true,
+                26, " × Error sintáctico {}: Falta una expresión en la suma [#, %]");
+
         /* Declaración de variables */
-        gramatica.group("VARIABLE", "TIPO_DATO IDENTIFICADOR OP_ASIG VALOR", true, identProd);
+        gramatica.group("VARIABLE", "TIPO_DATO IDENTIFICADOR OP_ASIG (VALOR | VARIABLE | SUMATORIA)", true, identProd);
+
         gramatica.group("VARIABLE", "TIPO_DATO OP_ASIG VALOR", true,
                 1, " × Error sintáctico {}: falta el identificador en la declaración de variable [#, %]");
 
@@ -440,7 +519,7 @@ public class Compilador extends javax.swing.JFrame {
                 3, " × Error sintáctico {}: falta el operador de asignación en la declaración de variable [#, %]", 2);
         gramatica.group("VARIABLE", "IDENTIFICADOR OP_ASIG VALOR", true,
                 4, " × Error sintáctico {}: falta el tipo de dato en la declaración de variable [#, %]");
-        
+
 
         /* Eliminación de tipos de datos y operadores de asignación */
         gramatica.delete("TIPO_DATO",
@@ -563,9 +642,9 @@ public class Compilador extends javax.swing.JFrame {
         HashMap<String, String> identDataType = new HashMap<>();
         identDataType.put("cadena", "CADENA");
         identDataType.put("entero", "NUMERO");
-        identDataType.put("array","ARRAY");
-        identDataType.put("booleano","BOOLEANO");
-        identDataType.put("flotante","FLOTANTE");
+        identDataType.put("array", "ARRAY");
+        identDataType.put("booleano", "BOOLEANO");
+        identDataType.put("flotante", "FLOTANTE");
         for (Production id : identProd) {
             if (!identDataType.get(id.lexemeRank(0)).equals(id.lexicalCompRank(-1))) {
                 errors.add(new ErrorLSSL(1, " × Error semántico {}: valor no compatible con el tipo de dato [#, %]", id, true));
