@@ -78,7 +78,7 @@ public class Compilador extends javax.swing.JFrame {
         identificadores = new HashMap<>();
         Functions.setAutocompleterJTextComponent(new String[]{"número", "color", "adelante", "atrás",
             "izquierda", "derecha", "norte", "sur", "este", "oeste", "pintar", "detenerPintar",
-            "tomar", "poner", "lanzarMoneda"}, jtpCode, () -> {
+            "tomar", "poner", "lanzarMoneda", "entero", "cadena"}, jtpCode, () -> {
             timerKeyReleased.restart();
         });
     }
@@ -344,7 +344,7 @@ public class Compilador extends javax.swing.JFrame {
                             System.out.println("Moviéndose a la derecha...");
                         } else if (sentence.startsWith("adelante")) {
                             System.out.println("Moviéndose hacia adelante");
-                        } else if (sentence.contains("-->")) {
+                        } else if (sentence.contains("=")) {
                             String[] identComp = sentence.split(" ");
                             System.out.println("Declarando identificador " + identComp[1] + " igual a " + identComp[3]);
                         } else if (sentence.startsWith("atrás")) {
@@ -409,7 +409,11 @@ public class Compilador extends javax.swing.JFrame {
         gramatica.delete(new String[]{"ERROR", "ERROR_1", "ERROR_2"}, 14);
 
         /* Agrupación de valores */
-        gramatica.group("VALOR", "(NUMERO | COLOR)", true);
+        /* Enteros */
+        gramatica.group("VALOR", "(CADENA | NUMERO)", true);
+        
+        /* CADENAS */
+        gramatica.group("CADENAS", "CADENA");
 
         /* Declaración de variables */
         gramatica.group("VARIABLE", "TIPO_DATO IDENTIFICADOR OP_ASIG VALOR", true, identProd);
@@ -547,13 +551,13 @@ public class Compilador extends javax.swing.JFrame {
 
     private void semanticAnalysis() {
         HashMap<String, String> identDataType = new HashMap<>();
-        identDataType.put("color", "COLOR");
-        identDataType.put("número", "NUMERO");
+        identDataType.put("cadena", "CADENA");
+        identDataType.put("entero", "ENTERO");
         for (Production id : identProd) {
             if (!identDataType.get(id.lexemeRank(0)).equals(id.lexicalCompRank(-1))) {
                 errors.add(new ErrorLSSL(1, " × Error semántico {}: valor no compatible con el tipo de dato [#, %]", id, true));
             }
-            if (id.lexicalCompRank(-1).equals("COLOR") && !id.lexemeRank(-1).matches("#[0-9a-fA-F]+")) {
+            if (id.lexicalCompRank(-1).equals("ENTERO") && !id.lexemeRank(-1).matches("#[0-9a-fA-F]+")) {
                 errors.add(new ErrorLSSL(2, " × Error lógico {}: el color no es un número hexadecimal [#, %]", id, false));
             }
             identificadores.put(id.lexemeRank(1), id.lexemeRank(-1));
